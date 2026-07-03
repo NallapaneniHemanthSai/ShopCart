@@ -31,7 +31,7 @@ export default function OrderDetail() {
         ← Back to order history
       </Link>
       <div className="mt-4">
-        <InvoiceView order={order} />
+        <InvoiceView order={order} onCancelled={setOrder} />
       </div>
     </div>
   );

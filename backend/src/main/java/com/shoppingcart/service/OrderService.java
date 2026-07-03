@@ -10,6 +10,8 @@ public interface OrderService {
 
     OrderResponse checkout(Long userId, CheckoutRequest request);
 
+    OrderResponse cancel(Long userId, boolean isAdmin, String invoiceNumber);
+
     List<OrderResponse> history(Long userId);
 
     OrderResponse getByInvoiceNumber(Long userId, boolean isAdmin, String invoiceNumber);

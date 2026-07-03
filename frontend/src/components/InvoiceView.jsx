@@ -1,10 +1,18 @@
+import { useState } from "react";
 import { formatCategory, formatCurrency, formatDate } from "../utils/format";
 import { orderApi } from "../api/orderApi";
 import { useNotify } from "../context/NotificationContext";
 import { extractErrorMessage } from "../api/client";
 
-export default function InvoiceView({ order }) {
+const STATUS_STYLES = {
+  COMPLETED: "text-emerald-700 bg-emerald-50",
+  PLACED: "text-amber-700 bg-amber-50",
+  CANCELLED: "text-red-700 bg-red-50",
+};
+
+export default function InvoiceView({ order, onCancelled }) {
   const notify = useNotify();
+  const [cancelling, setCancelling] = useState(false);
 
   async function handleExport(format) {
     try {
@@ -22,17 +30,44 @@ export default function InvoiceView({ order }) {
     }
   }
 
+  async function handleCancel() {
+    if (!window.confirm(`Cancel order ${order.invoiceNumber}? Stock will be restored.`)) {
+      return;
+    }
+    setCancelling(true);
+    try {
+      const updated = await orderApi.cancel(order.invoiceNumber);
+      notify("Order cancelled and stock restored", "success");
+      onCancelled?.(updated);
+    } catch (err) {
+      notify(extractErrorMessage(err), "error");
+    } finally {
+      setCancelling(false);
+    }
+  }
+
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+    <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 print:shadow-none print:border-none">
       <div className="flex items-start justify-between border-b border-slate-100 pb-4 mb-4">
         <div>
           <h2 className="text-lg font-bold text-slate-800">Invoice {order.invoiceNumber}</h2>
           <p className="text-sm text-slate-400">{formatDate(order.createdAt)}</p>
-          <span className="inline-block mt-2 text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-1 rounded">
+          <span
+            className={
+              "inline-block mt-2 text-xs font-semibold px-2 py-1 rounded " +
+              (STATUS_STYLES[order.status] || "text-slate-700 bg-slate-100")
+            }
+          >
             {order.status}
           </span>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 print:hidden">
+          <button
+            onClick={() => window.print()}
+            className="text-xs font-medium px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200"
+          >
+            Print / Save PDF
+          </button>
           <button
             onClick={() => handleExport("txt")}
             className="text-xs font-medium px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200"
@@ -45,6 +80,15 @@ export default function InvoiceView({ order }) {
           >
             Export CSV
           </button>
+          {order.status !== "CANCELLED" && (
+            <button
+              onClick={handleCancel}
+              disabled={cancelling}
+              className="text-xs font-medium px-3 py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 disabled:opacity-60"
+            >
+              {cancelling ? "Cancelling..." : "Cancel Order"}
+            </button>
+          )}
         </div>
       </div>
 

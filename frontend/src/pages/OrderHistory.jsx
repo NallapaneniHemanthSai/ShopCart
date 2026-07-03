@@ -7,6 +7,12 @@ import { formatCurrency, formatDate } from "../utils/format";
 import LoadingSpinner from "../components/LoadingSpinner";
 import EmptyState from "../components/EmptyState";
 
+const STATUS_STYLES = {
+  COMPLETED: "text-emerald-700 bg-emerald-50",
+  PLACED: "text-amber-700 bg-amber-50",
+  CANCELLED: "text-red-700 bg-red-50",
+};
+
 export default function OrderHistory() {
   const notify = useNotify();
   const [orders, setOrders] = useState([]);
@@ -52,6 +58,14 @@ export default function OrderHistory() {
               <div>
                 <p className="font-semibold text-slate-800">{order.invoiceNumber}</p>
                 <p className="text-xs text-slate-400">{formatDate(order.createdAt)}</p>
+                <span
+                  className={
+                    "inline-block mt-1 text-[10px] font-semibold px-2 py-0.5 rounded " +
+                    (STATUS_STYLES[order.status] || "text-slate-700 bg-slate-100")
+                  }
+                >
+                  {order.status}
+                </span>
               </div>
               <div className="text-right">
                 <p className="font-bold text-slate-900">{formatCurrency(order.totalAmount)}</p>

@@ -44,6 +44,13 @@ public class OrderController {
         return ResponseEntity.ok(orderService.getByInvoiceNumber(principal.getId(), isAdmin, invoiceNumber));
     }
 
+    @PostMapping("/{invoiceNumber}/cancel")
+    public ResponseEntity<OrderResponse> cancel(@AuthenticationPrincipal CustomUserDetails principal,
+                                                 @PathVariable String invoiceNumber) {
+        boolean isAdmin = principal.getRole() == Role.ADMIN;
+        return ResponseEntity.ok(orderService.cancel(principal.getId(), isAdmin, invoiceNumber));
+    }
+
     @GetMapping("/{invoiceNumber}/export")
     public ResponseEntity<byte[]> export(@AuthenticationPrincipal CustomUserDetails principal,
                                           @PathVariable String invoiceNumber,

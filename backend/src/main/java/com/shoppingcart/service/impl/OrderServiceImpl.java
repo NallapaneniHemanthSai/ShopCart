@@ -11,6 +11,7 @@ import com.shoppingcart.entity.Product;
 import com.shoppingcart.entity.User;
 import com.shoppingcart.exception.EmptyCartException;
 import com.shoppingcart.exception.InsufficientStockException;
+import com.shoppingcart.exception.OrderCancellationNotAllowedException;
 import com.shoppingcart.exception.OrderNotFoundException;
 import com.shoppingcart.mapper.OrderMapper;
 import com.shoppingcart.repository.CartItemRepository;
@@ -132,6 +133,26 @@ public class OrderServiceImpl implements OrderService {
         cartItemRepository.deleteByUserId(userId);
         cartService.clearHistory(userId);
 
+        return OrderMapper.toResponse(order);
+    }
+
+    @Override
+    @Transactional
+    public OrderResponse cancel(Long userId, boolean isAdmin, String invoiceNumber) {
+        Order order = requireOrderEntity(userId, isAdmin, invoiceNumber);
+        if (order.getStatus() == OrderStatus.CANCELLED) {
+            throw new OrderCancellationNotAllowedException(invoiceNumber);
+        }
+
+        for (OrderItem item : order.getItems()) {
+            productRepository.findBySku(item.getProductSku()).ifPresent(product -> {
+                product.setStock(product.getStock() + item.getQuantity());
+                productRepository.save(product);
+            });
+        }
+
+        order.setStatus(OrderStatus.CANCELLED);
+        orderRepository.save(order);
         return OrderMapper.toResponse(order);
     }
 

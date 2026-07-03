@@ -14,7 +14,11 @@
       "Bash(ssh -T git@github.com)",
       "Bash(git config *)",
       "Bash(security find-internet-password *)",
-      "Bash(git --version)"
+      "Bash(git --version)",
+      "Bash(JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q test)",
+      "Bash(curl -s http://localhost:8080/api/products/ELE-001)",
+      "Bash(python3 -m json.tool)",
+      "Bash(docker compose *)"
     ]
   }
 }
