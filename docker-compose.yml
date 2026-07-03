@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: shoppingcart-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: shoppingcart
+      POSTGRES_USER: shoppingcart
+      POSTGRES_PASSWORD: shoppingcart
+    ports:
+      - "5432:5432"
+    volumes:
+      - shoppingcart_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shoppingcart -d shoppingcart"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  shoppingcart_pgdata:

@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(java -version)",
+      "Bash(mvn -version)",
+      "Bash(npm -v)",
+      "Bash(docker -v)",
+      "Bash(docker info *)",
+      "Bash(curl -s http://localhost:8080/api/products)",
+      "Bash(curl -s -X POST http://localhost:8080/api/auth/login -H \"Content-Type: application/json\" -d '{\"email\":\"admin@shoppingcart.local\",\"password\":\"Admin@123\"}')",
+      "Bash(JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q -DskipTests compile)",
+      "Bash(gh auth *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" https://github.com/NallapaneniHemanthSai/ShopCart.git)",
+      "Bash(ssh -T git@github.com)",
+      "Bash(git config *)",
+      "Bash(security find-internet-password *)",
+      "Bash(git --version)"
+    ]
+  }
+}
