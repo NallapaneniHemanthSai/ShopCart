@@ -17,5 +17,9 @@ export const adminApi = {
   getGst: () => client.get("/admin/gst").then((r) => r.data),
   updateGst: (ratePercent) => client.put("/admin/gst", { ratePercent }).then((r) => r.data),
 
+  listVendors: () => client.get("/admin/vendors").then((r) => r.data),
+  createVendor: (payload) => client.post("/admin/vendors", payload).then((r) => r.data),
+  updateVendor: (id, payload) => client.put(`/admin/vendors/${id}`, payload).then((r) => r.data),
+
   analytics: () => client.get("/admin/analytics").then((r) => r.data),
 };

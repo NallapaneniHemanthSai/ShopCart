@@ -6,11 +6,12 @@ import { CATEGORIES } from "../../utils/constants";
 import { formatCategory, formatCurrency } from "../../utils/format";
 import LoadingSpinner from "../../components/LoadingSpinner";
 
-const emptyForm = {
+const baseForm = {
   sku: "",
   name: "",
   description: "",
   category: CATEGORIES[0],
+  vendorId: "",
   price: "",
   stock: "",
   imageUrl: "",
@@ -20,29 +21,36 @@ const emptyForm = {
 export default function AdminProducts() {
   const notify = useNotify();
   const [products, setProducts] = useState([]);
+  const [vendors, setVendors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingSku, setEditingSku] = useState(null);
-  const [form, setForm] = useState(emptyForm);
+  const [form, setForm] = useState(baseForm);
   const [submitting, setSubmitting] = useState(false);
 
   function load() {
     setLoading(true);
-    adminApi
-      .listProducts()
-      .then(setProducts)
+    Promise.all([adminApi.listProducts(), adminApi.listVendors()])
+      .then(([productList, vendorList]) => {
+        setProducts(productList);
+        setVendors(vendorList);
+      })
       .catch((err) => notify(extractErrorMessage(err), "error"))
       .finally(() => setLoading(false));
   }
 
   useEffect(load, []);
 
+  function emptyForm() {
+    return { ...baseForm, vendorId: vendors[0]?.id ?? "" };
+  }
+
   function update(field) {
     return (e) => setForm({ ...form, [field]: e.target.value });
   }
 
   function startCreate() {
-    setForm(emptyForm);
+    setForm(emptyForm());
     setEditingSku(null);
     setShowForm(true);
   }
@@ -53,6 +61,7 @@ export default function AdminProducts() {
       name: product.name,
       description: product.description || "",
       category: product.category,
+      vendorId: product.vendorId,
       price: product.price,
       stock: product.stock,
       imageUrl: product.imageUrl || "",
@@ -71,6 +80,7 @@ export default function AdminProducts() {
           name: form.name,
           description: form.description,
           category: form.category,
+          vendorId: Number(form.vendorId),
           price: Number(form.price),
           stock: Number(form.stock),
           active: form.active,
@@ -83,6 +93,7 @@ export default function AdminProducts() {
           name: form.name,
           description: form.description,
           category: form.category,
+          vendorId: Number(form.vendorId),
           price: Number(form.price),
           stock: Number(form.stock),
           imageUrl: form.imageUrl,
@@ -113,6 +124,7 @@ export default function AdminProducts() {
         name: product.name,
         description: product.description,
         category: product.category,
+        vendorId: product.vendorId,
         price: product.price,
         stock: product.stock,
         active: !product.active,
@@ -191,6 +203,22 @@ export default function AdminProducts() {
             </select>
           </div>
           <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Vendor</label>
+            <select
+              required
+              value={form.vendorId}
+              onChange={update("vendorId")}
+              className="w-full border border-slate-300 rounded-lg px-3 py-2"
+            >
+              <option value="" disabled>Select a vendor</option>
+              {vendors.map((v) => (
+                <option key={v.id} value={v.id}>
+                  {v.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Price (₹)</label>
             <input
               required
@@ -247,6 +275,7 @@ export default function AdminProducts() {
               <th className="text-left px-4 py-3">SKU</th>
               <th className="text-left px-4 py-3">Name</th>
               <th className="text-left px-4 py-3">Category</th>
+              <th className="text-left px-4 py-3">Vendor</th>
               <th className="text-right px-4 py-3">Price</th>
               <th className="text-center px-4 py-3">Stock</th>
               <th className="text-center px-4 py-3">Status</th>
@@ -259,6 +288,7 @@ export default function AdminProducts() {
                 <td className="px-4 py-3 font-mono text-xs text-slate-500">{p.sku}</td>
                 <td className="px-4 py-3 font-medium text-slate-800">{p.name}</td>
                 <td className="px-4 py-3 text-slate-500">{formatCategory(p.category)}</td>
+                <td className="px-4 py-3 text-slate-500">{p.vendorName}</td>
                 <td className="px-4 py-3 text-right">{formatCurrency(p.price)}</td>
                 <td className="px-4 py-3">
                   <div className="flex items-center justify-center gap-2">

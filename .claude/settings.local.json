@@ -18,7 +18,24 @@
       "Bash(JAVA_HOME=/opt/homebrew/opt/openjdk@17 mvn -q test)",
       "Bash(curl -s http://localhost:8080/api/products/ELE-001)",
       "Bash(python3 -m json.tool)",
-      "Bash(docker compose *)"
+      "Bash(docker compose *)",
+      "Bash(npm install *)",
+      "Bash(python3 -c \"import PIL; print\\('pillow ok'\\)\")",
+      "Bash(node -e \"require\\('pptxgenjs'\\); require\\('react-icons/fa'\\); require\\('sharp'\\); console.log\\('modules ok'\\)\")",
+      "Read(//Users/hemanthsainallapaneni/Library/Application Support/Claude/local-agent-mode-sessions/skills-plugin/07bd6860-bb41-4304-b228-04623b2af552/3d1561fd-0a34-48a5-b2f4-8df2d139bd25/skills/pptx/scripts/**)",
+      "Read(//Users/hemanthsainallapaneni/Library/Application Support/Claude/local-agent-mode-sessions/skills-plugin/07bd6860-bb41-4304-b228-04623b2af552/3d1561fd-0a34-48a5-b2f4-8df2d139bd25/skills/pptx/scripts/office/**)",
+      "Bash(brew list *)",
+      "Bash(brew install *)",
+      "Bash(mkdir -p /private/tmp/claude-501/-Users-hemanthsainallapaneni-Desktop-SHOPPINGCART/6befd094-8b5b-4c8a-a4cd-68f4fc232351/scratchpad/pptx-build)",
+      "Bash(npm init *)",
+      "Bash(which soffice 2>&1 *)",
+      "Bash(node build.js)",
+      "Bash(python3 '/Users/hemanthsainallapaneni/Library/Application Support/Claude/local-agent-mode-sessions/skills-plugin/07bd6860-bb41-4304-b228-04623b2af552/3d1561fd-0a34-48a5-b2f4-8df2d139bd25/skills/pptx/scripts/rezip.py' /Users/hemanthsainallapaneni/Desktop/SHOPPINGCART/Shopping_Cart_Manager_Hackathon_Deck.pptx)",
+      "Bash(extract-text \"/Users/hemanthsainallapaneni/Desktop/SHOPPINGCART/Shopping_Cart_Manager_Hackathon_Deck.pptx\")",
+      "Bash(SKILLDIR=\"/Users/hemanthsainallapaneni/Library/Application Support/Claude/local-agent-mode-sessions/skills-plugin/07bd6860-bb41-4304-b228-04623b2af552/3d1561fd-0a34-48a5-b2f4-8df2d139bd25/skills/pptx\" *)",
+      "Bash(find / -maxdepth 6 -iname \"extract-text*\")",
+      "Bash(python3 -c \"import pptx; print\\(pptx.__file__\\)\")",
+      "Bash(python3 __TRACKED_VAR__/scripts/office/soffice.py --headless --convert-to pdf Shopping_Cart_Manager_Hackathon_Deck.pptx)"
     ]
   }
 }

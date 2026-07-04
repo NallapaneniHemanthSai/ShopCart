@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { authApi } from "../api/authApi";
+import { userApi } from "../api/userApi";
 
 const AuthContext = createContext(null);
 
@@ -23,8 +24,9 @@ export function AuthProvider({ children }) {
     try {
       const data = await authApi.login({ email, password });
       localStorage.setItem("token", data.token);
-      const nextUser = { id: data.userId, name: data.name, email: data.email, role: data.role };
+      const nextUser = { id: data.userId, name: data.name, email: data.email, role: data.role, loyaltyPoints: 0 };
       setUser(nextUser);
+      refreshProfile();
       return nextUser;
     } finally {
       setLoading(false);
@@ -36,7 +38,7 @@ export function AuthProvider({ children }) {
     try {
       const data = await authApi.register(payload);
       localStorage.setItem("token", data.token);
-      const nextUser = { id: data.userId, name: data.name, email: data.email, role: data.role };
+      const nextUser = { id: data.userId, name: data.name, email: data.email, role: data.role, loyaltyPoints: 0 };
       setUser(nextUser);
       return nextUser;
     } finally {
@@ -50,6 +52,15 @@ export function AuthProvider({ children }) {
     setUser(null);
   }
 
+  async function refreshProfile() {
+    try {
+      const profile = await userApi.me();
+      setUser((prev) => (prev ? { ...prev, loyaltyPoints: profile.loyaltyPoints } : prev));
+    } catch {
+      // non-critical, ignore
+    }
+  }
+
   const value = {
     user,
     loading,
@@ -58,6 +69,7 @@ export function AuthProvider({ children }) {
     login,
     register,
     logout,
+    refreshProfile,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

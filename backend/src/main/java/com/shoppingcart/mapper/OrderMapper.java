@@ -35,6 +35,8 @@ public final class OrderMapper {
                 order.getGstAmount(),
                 order.getCouponCode(),
                 order.getDiscountAmount(),
+                order.getPointsRedeemed(),
+                order.getPointsEarned(),
                 order.getDeliveryCharge(),
                 order.getTotalAmount(),
                 order.getPaymentMethod(),

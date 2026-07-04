@@ -11,7 +11,7 @@ import { PAYMENT_METHODS } from "../utils/constants";
 import EmptyState from "../components/EmptyState";
 
 export default function Checkout() {
-  const { user } = useAuth();
+  const { user, refreshProfile } = useAuth();
   const { cart, refresh } = useCart();
   const notify = useNotify();
   const navigate = useNavigate();
@@ -26,6 +26,7 @@ export default function Checkout() {
   const [couponResult, setCouponResult] = useState(null);
   const [validatingCoupon, setValidatingCoupon] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [redeemPoints, setRedeemPoints] = useState(0);
 
   function update(field) {
     return (e) => setForm({ ...form, [field]: e.target.value });
@@ -52,9 +53,11 @@ export default function Checkout() {
       const order = await orderApi.checkout({
         ...form,
         couponCode: couponResult?.valid ? couponCode.trim().toUpperCase() : undefined,
+        redeemPoints: redeemPoints > 0 ? redeemPoints : undefined,
       });
       notify("Order placed successfully!", "success");
       await refresh();
+      await refreshProfile();
       navigate(`/orders/${order.invoiceNumber}`);
     } catch (err) {
       notify(extractErrorMessage(err), "error");
@@ -68,6 +71,13 @@ export default function Checkout() {
   }
 
   const estimatedDiscount = couponResult?.valid ? couponResult.discountAmount : 0;
+  const availablePoints = user?.loyaltyPoints ?? 0;
+  const maxRedeemable = Math.min(availablePoints, Math.floor(cart.subtotal - estimatedDiscount));
+
+  function handleRedeemChange(value) {
+    const clamped = Math.max(0, Math.min(maxRedeemable, Number(value) || 0));
+    setRedeemPoints(clamped);
+  }
 
   return (
     <div className="max-w-3xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -127,7 +137,9 @@ export default function Checkout() {
           disabled={submitting}
           className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white font-semibold py-2.5 rounded-lg transition-colors"
         >
-          {submitting ? "Placing order..." : `Place Order · ${formatCurrency(cart.subtotal - estimatedDiscount)}`}
+          {submitting
+            ? "Placing order..."
+            : `Place Order · ${formatCurrency(cart.subtotal - estimatedDiscount - redeemPoints)}`}
         </button>
       </form>
 
@@ -174,6 +186,37 @@ export default function Checkout() {
           )}
         </div>
 
+        {availablePoints > 0 && (
+          <div className="border-t border-slate-100 pt-3 mb-4">
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-sm font-medium text-slate-700">
+                ⭐ Redeem Loyalty Points
+              </label>
+              <span className="text-xs text-slate-400">{availablePoints} pts available (1 pt = ₹1)</span>
+            </div>
+            <div className="flex gap-2">
+              <input
+                type="number"
+                min={0}
+                max={maxRedeemable}
+                value={redeemPoints}
+                onChange={(e) => handleRedeemChange(e.target.value)}
+                className="flex-1 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+              />
+              <button
+                type="button"
+                onClick={() => handleRedeemChange(maxRedeemable)}
+                className="px-4 py-2 rounded-lg bg-amber-50 text-amber-700 text-sm font-medium hover:bg-amber-100"
+              >
+                Use Max
+              </button>
+            </div>
+            {redeemPoints > 0 && (
+              <p className="text-xs text-emerald-600 mt-1">Redeeming {redeemPoints} pts = −{formatCurrency(redeemPoints)}</p>
+            )}
+          </div>
+        )}
+
         <div className="flex justify-between text-sm text-slate-600">
           <span>Subtotal</span>
           <span>{formatCurrency(cart.subtotal)}</span>
@@ -182,6 +225,12 @@ export default function Checkout() {
           <div className="flex justify-between text-sm text-emerald-600">
             <span>Discount</span>
             <span>−{formatCurrency(estimatedDiscount)}</span>
+          </div>
+        )}
+        {redeemPoints > 0 && (
+          <div className="flex justify-between text-sm text-amber-600">
+            <span>Points Redeemed</span>
+            <span>−{formatCurrency(redeemPoints)}</span>
           </div>
         )}
         <p className="text-xs text-slate-400 mt-2">

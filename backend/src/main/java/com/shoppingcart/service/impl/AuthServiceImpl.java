@@ -3,6 +3,7 @@ package com.shoppingcart.service.impl;
 import com.shoppingcart.dto.request.LoginRequest;
 import com.shoppingcart.dto.request.RegisterRequest;
 import com.shoppingcart.dto.response.AuthResponse;
+import com.shoppingcart.dto.response.UserProfileResponse;
 import com.shoppingcart.entity.Role;
 import com.shoppingcart.entity.User;
 import com.shoppingcart.exception.DuplicateEmailException;
@@ -54,6 +55,12 @@ public class AuthServiceImpl implements AuthService {
         }
 
         return buildAuthResponse(user);
+    }
+
+    @Override
+    public UserProfileResponse getProfile(Long userId) {
+        User user = userRepository.findById(userId).orElseThrow();
+        return new UserProfileResponse(user.getId(), user.getName(), user.getEmail(), user.getRole(), user.getLoyaltyPoints());
     }
 
     private AuthResponse buildAuthResponse(User user) {

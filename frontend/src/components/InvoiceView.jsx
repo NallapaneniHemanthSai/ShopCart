@@ -139,6 +139,12 @@ export default function InvoiceView({ order, onCancelled }) {
             <span>−{formatCurrency(order.discountAmount)}</span>
           </div>
         )}
+        {order.pointsRedeemed > 0 && (
+          <div className="flex justify-between text-amber-600">
+            <span>⭐ Points Redeemed ({order.pointsRedeemed})</span>
+            <span>−{formatCurrency(order.pointsRedeemed)}</span>
+          </div>
+        )}
         <div className="flex justify-between text-slate-600">
           <span>GST ({order.gstRate}%)</span>
           <span>{formatCurrency(order.gstAmount)}</span>
@@ -151,6 +157,9 @@ export default function InvoiceView({ order, onCancelled }) {
           <span>Total</span>
           <span>{formatCurrency(order.totalAmount)}</span>
         </div>
+        {order.pointsEarned > 0 && (
+          <p className="text-xs text-amber-600 pt-1">⭐ You earned {order.pointsEarned} loyalty points on this order</p>
+        )}
       </div>
     </div>
   );

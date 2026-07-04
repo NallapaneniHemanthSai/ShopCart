@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { productApi } from "../api/productApi";
 import { wishlistApi } from "../api/wishlistApi";
 import { useAuth } from "../context/AuthContext";
@@ -70,6 +70,25 @@ export default function Catalog() {
     loadRecentlyViewed();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated]);
+
+  // When the same product name is listed by more than one vendor, flag the
+  // cheapest listing so shoppers can spot the best deal across sellers.
+  const bestPriceSkus = useMemo(() => {
+    const byName = new Map();
+    for (const p of products) {
+      const group = byName.get(p.name) || [];
+      group.push(p);
+      byName.set(p.name, group);
+    }
+    const best = new Set();
+    for (const group of byName.values()) {
+      if (group.length > 1) {
+        const cheapest = group.reduce((min, p) => (p.price < min.price ? p : min));
+        best.add(cheapest.sku);
+      }
+    }
+    return best;
+  }, [products]);
 
   function handleSearchSubmit(e) {
     e.preventDefault();
@@ -180,6 +199,7 @@ export default function Catalog() {
               onAddToCart={handleAddToCart}
               onToggleWishlist={handleToggleWishlist}
               isWishlisted={wishlistSkus.has(product.sku)}
+              isBestPrice={bestPriceSkus.has(product.sku)}
             />
           ))}
         </div>

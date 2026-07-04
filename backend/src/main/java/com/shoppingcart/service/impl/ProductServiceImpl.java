@@ -6,15 +6,21 @@ import com.shoppingcart.dto.request.StockAdjustRequest;
 import com.shoppingcart.dto.response.ProductResponse;
 import com.shoppingcart.entity.Category;
 import com.shoppingcart.entity.Product;
+import com.shoppingcart.entity.Vendor;
 import com.shoppingcart.exception.DuplicateSkuException;
 import com.shoppingcart.exception.ProductNotFoundException;
 import com.shoppingcart.mapper.ProductMapper;
 import com.shoppingcart.repository.ProductRepository;
+import com.shoppingcart.repository.RatingAggregate;
 import com.shoppingcart.service.ProductService;
+import com.shoppingcart.service.ReviewService;
+import com.shoppingcart.service.VendorService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayDeque;
 import java.util.Comparator;
 import java.util.Deque;
@@ -24,28 +30,33 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class ProductServiceImpl implements ProductService {
 
     private static final int RECENTLY_VIEWED_LIMIT = 10;
     private static final int LOW_STOCK_DEFAULT_THRESHOLD = 5;
 
     private final ProductRepository productRepository;
+    private final VendorService vendorService;
+    private final ReviewService reviewService;
 
     /** Per-user recently-viewed SKUs, most-recent-first, deduplicated, bounded by RECENTLY_VIEWED_LIMIT. */
     private final Map<Long, Deque<String>> recentlyViewedByUser = new ConcurrentHashMap<>();
 
     @Override
     public List<ProductResponse> listAll() {
+        Map<Long, RatingAggregate> ratings = reviewService.aggregateAllRatings();
         return productRepository.findByActiveTrue().stream()
-                .map(ProductMapper::toResponse)
+                .map(p -> mapWithRating(p, ratings))
                 .toList();
     }
 
     @Override
     public List<ProductResponse> listAllForAdmin() {
+        Map<Long, RatingAggregate> ratings = reviewService.aggregateAllRatings();
         return productRepository.findAll().stream()
                 .sorted(Comparator.comparing(Product::getSku))
-                .map(ProductMapper::toResponse)
+                .map(p -> mapWithRating(p, ratings))
                 .toList();
     }
 
@@ -68,10 +79,20 @@ public class ProductServiceImpl implements ProductService {
         }
 
         Comparator<Product> comparator = resolveComparator(sortBy);
+        Map<Long, RatingAggregate> ratings = reviewService.aggregateAllRatings();
         return results.stream()
                 .sorted(comparator)
-                .map(ProductMapper::toResponse)
+                .map(p -> mapWithRating(p, ratings))
                 .toList();
+    }
+
+    private ProductResponse mapWithRating(Product product, Map<Long, RatingAggregate> ratings) {
+        RatingAggregate agg = ratings.get(product.getId());
+        if (agg == null || agg.getAvgRating() == null) {
+            return ProductMapper.toResponse(product);
+        }
+        BigDecimal avg = BigDecimal.valueOf(agg.getAvgRating()).setScale(1, RoundingMode.HALF_UP);
+        return ProductMapper.toResponse(product, avg, agg.getReviewCount());
     }
 
     private Comparator<Product> resolveComparator(String sortBy) {
@@ -90,7 +111,13 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public ProductResponse getBySku(String sku) {
-        return ProductMapper.toResponse(findEntity(sku));
+        Product product = findEntity(sku);
+        RatingAggregate agg = reviewService.aggregateRatingFor(product.getId());
+        if (agg == null || agg.getAvgRating() == null) {
+            return ProductMapper.toResponse(product);
+        }
+        BigDecimal avg = BigDecimal.valueOf(agg.getAvgRating()).setScale(1, RoundingMode.HALF_UP);
+        return ProductMapper.toResponse(product, avg, agg.getReviewCount());
     }
 
     @Override
@@ -99,11 +126,13 @@ public class ProductServiceImpl implements ProductService {
         if (productRepository.existsBySku(request.sku())) {
             throw new DuplicateSkuException(request.sku());
         }
+        Vendor vendor = vendorService.requireById(request.vendorId());
         Product product = Product.builder()
                 .sku(request.sku())
                 .name(request.name())
                 .description(request.description())
                 .category(request.category())
+                .vendor(vendor)
                 .price(request.price())
                 .stock(request.stock())
                 .active(true)
@@ -116,9 +145,11 @@ public class ProductServiceImpl implements ProductService {
     @Transactional
     public ProductResponse update(String sku, ProductUpdateRequest request) {
         Product product = findEntity(sku);
+        Vendor vendor = vendorService.requireById(request.vendorId());
         product.setName(request.name());
         product.setDescription(request.description());
         product.setCategory(request.category());
+        product.setVendor(vendor);
         product.setPrice(request.price());
         product.setStock(request.stock());
         product.setActive(request.active());
@@ -172,12 +203,13 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public List<ProductResponse> recentlyViewed(Long userId) {
+        Map<Long, RatingAggregate> ratings = reviewService.aggregateAllRatings();
         Deque<String> viewed = recentlyViewedByUser.getOrDefault(userId, new ArrayDeque<>());
         synchronized (viewed) {
             return viewed.stream()
                     .map(sku -> productRepository.findBySku(sku).orElse(null))
                     .filter(p -> p != null && p.isActive())
-                    .map(ProductMapper::toResponse)
+                    .map(p -> mapWithRating(p, ratings))
                     .toList();
         }
     }

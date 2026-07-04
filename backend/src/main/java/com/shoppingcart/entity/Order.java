@@ -57,6 +57,14 @@ public class Order {
     @Column(name = "total_amount", nullable = false, precision = 12, scale = 2)
     private BigDecimal totalAmount;
 
+    @Column(name = "points_redeemed", nullable = false)
+    @Builder.Default
+    private Integer pointsRedeemed = 0;
+
+    @Column(name = "points_earned", nullable = false)
+    @Builder.Default
+    private Integer pointsEarned = 0;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "payment_method", nullable = false, length = 20)
     private PaymentMethod paymentMethod;

@@ -59,6 +59,14 @@ export default function Navbar() {
                   </span>
                 )}
               </Link>
+              {!isAdmin && (
+                <span
+                  className="hidden sm:inline-flex items-center gap-1 text-xs font-semibold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full"
+                  title="Loyalty points balance"
+                >
+                  ⭐ {user.loyaltyPoints ?? 0} pts
+                </span>
+              )}
               <span className="text-sm text-slate-500 hidden sm:inline">{user.name}</span>
               <button
                 onClick={handleLogout}

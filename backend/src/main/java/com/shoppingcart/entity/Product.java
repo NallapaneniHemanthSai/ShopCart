@@ -32,6 +32,10 @@ public class Product {
     @Column(length = 1000)
     private String description;
 
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "vendor_id", nullable = false)
+    private Vendor vendor;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
     private Category category;

@@ -15,6 +15,8 @@ public record OrderResponse(
         BigDecimal gstAmount,
         String couponCode,
         BigDecimal discountAmount,
+        Integer pointsRedeemed,
+        Integer pointsEarned,
         BigDecimal deliveryCharge,
         BigDecimal totalAmount,
         PaymentMethod paymentMethod,

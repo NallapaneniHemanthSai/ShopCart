@@ -41,6 +41,10 @@ public class User {
     @Column(length = 300)
     private String address;
 
+    @Column(name = "loyalty_points", nullable = false)
+    @Builder.Default
+    private Integer loyaltyPoints = 0;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 

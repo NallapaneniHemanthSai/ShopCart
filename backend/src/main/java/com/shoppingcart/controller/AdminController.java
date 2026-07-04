@@ -5,14 +5,17 @@ import com.shoppingcart.dto.request.GstUpdateRequest;
 import com.shoppingcart.dto.request.ProductCreateRequest;
 import com.shoppingcart.dto.request.ProductUpdateRequest;
 import com.shoppingcart.dto.request.StockAdjustRequest;
+import com.shoppingcart.dto.request.VendorRequest;
 import com.shoppingcart.dto.response.AnalyticsResponse;
 import com.shoppingcart.dto.response.CouponResponse;
 import com.shoppingcart.dto.response.GstConfigResponse;
 import com.shoppingcart.dto.response.ProductResponse;
+import com.shoppingcart.dto.response.VendorResponse;
 import com.shoppingcart.service.AnalyticsService;
 import com.shoppingcart.service.CouponService;
 import com.shoppingcart.service.GstService;
 import com.shoppingcart.service.ProductService;
+import com.shoppingcart.service.VendorService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -29,6 +32,7 @@ public class AdminController {
     private final CouponService couponService;
     private final GstService gstService;
     private final AnalyticsService analyticsService;
+    private final VendorService vendorService;
 
     // ---- Product & inventory management ----
 
@@ -99,6 +103,24 @@ public class AdminController {
     @PutMapping("/gst")
     public ResponseEntity<GstConfigResponse> updateGst(@Valid @RequestBody GstUpdateRequest request) {
         return ResponseEntity.ok(gstService.updateRate(request.ratePercent()));
+    }
+
+    // ---- Vendor management ----
+
+    @GetMapping("/vendors")
+    public ResponseEntity<List<VendorResponse>> listVendors() {
+        return ResponseEntity.ok(vendorService.listAll());
+    }
+
+    @PostMapping("/vendors")
+    public ResponseEntity<VendorResponse> createVendor(@Valid @RequestBody VendorRequest request) {
+        return ResponseEntity.ok(vendorService.create(request));
+    }
+
+    @PutMapping("/vendors/{id}")
+    public ResponseEntity<VendorResponse> updateVendor(@PathVariable Long id,
+                                                        @Valid @RequestBody VendorRequest request) {
+        return ResponseEntity.ok(vendorService.update(id, request));
     }
 
     // ---- Analytics ----

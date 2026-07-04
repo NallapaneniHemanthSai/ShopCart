@@ -12,6 +12,12 @@ public record ProductResponse(
         BigDecimal price,
         Integer stock,
         boolean active,
-        String imageUrl
+        String imageUrl,
+        Long vendorId,
+        String vendorName,
+        BigDecimal vendorRating,
+        boolean vendorVerified,
+        BigDecimal averageRating,
+        long reviewCount
 ) {
 }

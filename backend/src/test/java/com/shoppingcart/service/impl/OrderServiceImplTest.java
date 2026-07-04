@@ -66,9 +66,10 @@ class OrderServiceImplTest {
 
         mouse = Product.builder().id(10L).sku("ELE-001").name("Wireless Mouse")
                 .category(Category.ELECTRONICS).price(new BigDecimal("699.00")).stock(50).active(true).build();
-        user = User.builder().id(USER_ID).name("Test User").build();
+        user = User.builder().id(USER_ID).name("Test User").loyaltyPoints(0).build();
 
         lenient().when(userRepository.getReferenceById(USER_ID)).thenReturn(user);
+        lenient().when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
         lenient().when(invoiceNumberGenerator.next()).thenReturn("INV-20260704-000001");
         lenient().when(gstService.currentRate()).thenReturn(new BigDecimal("18.00"));
     }
@@ -78,7 +79,11 @@ class OrderServiceImplTest {
     }
 
     private CheckoutRequest checkoutRequest(String couponCode) {
-        return new CheckoutRequest(couponCode, PaymentMethod.UPI, "Test User", "9876543210", "123 Main St");
+        return checkoutRequest(couponCode, null);
+    }
+
+    private CheckoutRequest checkoutRequest(String couponCode, Integer redeemPoints) {
+        return new CheckoutRequest(couponCode, redeemPoints, PaymentMethod.UPI, "Test User", "9876543210", "123 Main St");
     }
 
     @Test
@@ -153,6 +158,35 @@ class OrderServiceImplTest {
         assertThat(response.gstAmount()).isEqualByComparingTo("226.48"); // 1258.20 * 18% rounded
         assertThat(response.totalAmount()).isEqualByComparingTo("1484.68");
         assertThat(response.couponCode()).isEqualTo("SAVE10");
+    }
+
+    @Test
+    void checkout_redeemingPoints_discountsBeforeGstAndDeductsBalance() {
+        user.setLoyaltyPoints(200);
+        when(cartItemRepository.findByUserIdOrderByAddedAtAsc(USER_ID))
+                .thenReturn(List.of(cartItemOf(mouse, 2))); // subtotal 1398.00
+
+        OrderResponse response = orderService.checkout(USER_ID, checkoutRequest(null, 100));
+
+        // 1398 - 100 (points) = taxable 1298.00 -> GST 18% = 233.64, still above threshold => free delivery
+        assertThat(response.pointsRedeemed()).isEqualTo(100);
+        assertThat(response.gstAmount()).isEqualByComparingTo("233.64");
+        assertThat(response.totalAmount()).isEqualByComparingTo("1531.64");
+        // earned = floor(1531.64 / 100) = 15; balance = 200 - 100 + 15 = 115
+        assertThat(user.getLoyaltyPoints()).isEqualTo(115);
+        assertThat(response.pointsEarned()).isEqualTo(15);
+    }
+
+    @Test
+    void checkout_redeemingMorePointsThanOwned_throwsInsufficientLoyaltyPoints() {
+        user.setLoyaltyPoints(10);
+        when(cartItemRepository.findByUserIdOrderByAddedAtAsc(USER_ID))
+                .thenReturn(List.of(cartItemOf(mouse, 2)));
+
+        assertThatThrownBy(() -> orderService.checkout(USER_ID, checkoutRequest(null, 50)))
+                .isInstanceOf(com.shoppingcart.exception.InsufficientLoyaltyPointsException.class);
+
+        verify(orderRepository, never()).save(any());
     }
 
     @Test

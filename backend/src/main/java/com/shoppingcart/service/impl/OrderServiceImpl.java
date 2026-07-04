@@ -10,6 +10,7 @@ import com.shoppingcart.entity.OrderStatus;
 import com.shoppingcart.entity.Product;
 import com.shoppingcart.entity.User;
 import com.shoppingcart.exception.EmptyCartException;
+import com.shoppingcart.exception.InsufficientLoyaltyPointsException;
 import com.shoppingcart.exception.InsufficientStockException;
 import com.shoppingcart.exception.OrderCancellationNotAllowedException;
 import com.shoppingcart.exception.OrderNotFoundException;
@@ -37,6 +38,10 @@ import java.util.List;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class OrderServiceImpl implements OrderService {
+
+    /** 1 loyalty point = ₹1 off at redemption; 1 point earned per ₹100 of the final payable amount. */
+    private static final BigDecimal POINT_VALUE = BigDecimal.ONE;
+    private static final BigDecimal EARN_DIVISOR = BigDecimal.valueOf(100);
 
     private final CartItemRepository cartItemRepository;
     private final ProductRepository productRepository;
@@ -83,7 +88,18 @@ public class OrderServiceImpl implements OrderService {
             appliedCouponCode = coupon.getCode();
         }
 
-        BigDecimal taxableAmount = subtotal.subtract(discountAmount).max(BigDecimal.ZERO);
+        User user = userRepository.findById(userId).orElseThrow();
+        int requestedRedeemPoints = request.redeemPoints() == null ? 0 : request.redeemPoints();
+        if (requestedRedeemPoints > user.getLoyaltyPoints()) {
+            throw new InsufficientLoyaltyPointsException(requestedRedeemPoints, user.getLoyaltyPoints());
+        }
+
+        BigDecimal afterCoupon = subtotal.subtract(discountAmount).max(BigDecimal.ZERO);
+        BigDecimal maxRedeemableValue = afterCoupon.setScale(0, RoundingMode.DOWN);
+        int redeemedPoints = Math.min(requestedRedeemPoints, maxRedeemableValue.intValue());
+        BigDecimal pointsDiscountValue = BigDecimal.valueOf(redeemedPoints).multiply(POINT_VALUE);
+
+        BigDecimal taxableAmount = afterCoupon.subtract(pointsDiscountValue).max(BigDecimal.ZERO);
         BigDecimal gstRate = gstService.currentRate();
         BigDecimal gstAmount = taxableAmount.multiply(gstRate)
                 .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
@@ -93,16 +109,21 @@ public class OrderServiceImpl implements OrderService {
                 : deliveryChargeFlat;
 
         BigDecimal totalAmount = taxableAmount.add(gstAmount).add(deliveryCharge);
+        int earnedPoints = totalAmount.divide(EARN_DIVISOR, 0, RoundingMode.DOWN).intValue();
 
-        User userRef = userRepository.getReferenceById(userId);
+        user.setLoyaltyPoints(user.getLoyaltyPoints() - redeemedPoints + earnedPoints);
+        userRepository.save(user);
+
         Order order = Order.builder()
                 .invoiceNumber(invoiceNumberGenerator.next())
-                .user(userRef)
+                .user(user)
                 .subtotal(subtotal)
                 .gstRate(gstRate)
                 .gstAmount(gstAmount)
                 .couponCode(appliedCouponCode)
                 .discountAmount(discountAmount)
+                .pointsRedeemed(redeemedPoints)
+                .pointsEarned(earnedPoints)
                 .deliveryCharge(deliveryCharge)
                 .totalAmount(totalAmount)
                 .paymentMethod(request.paymentMethod())

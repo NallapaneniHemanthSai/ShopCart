@@ -17,6 +17,7 @@ import Wishlist from "./pages/Wishlist";
 
 import AdminLayout from "./pages/admin/AdminLayout";
 import AdminProducts from "./pages/admin/AdminProducts";
+import AdminVendors from "./pages/admin/AdminVendors";
 import AdminCoupons from "./pages/admin/AdminCoupons";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AdminGst from "./pages/admin/AdminGst";
@@ -45,6 +46,7 @@ export default function App() {
                 <Route path="admin" element={<AdminRoute />}>
                   <Route element={<AdminLayout />}>
                     <Route index element={<AdminProducts />} />
+                    <Route path="vendors" element={<AdminVendors />} />
                     <Route path="coupons" element={<AdminCoupons />} />
                     <Route path="analytics" element={<AdminAnalytics />} />
                     <Route path="gst" element={<AdminGst />} />
